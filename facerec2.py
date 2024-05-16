@@ -7,6 +7,8 @@ from tensorflow.keras.layers import Input, Flatten
 from tensorflow.keras.models import Model
 from tensorflow.keras.applications import InceptionV3
 from scipy.spatial.distance import cosine
+import gdown
+import os
 
 def detect_face(frame):
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -94,6 +96,12 @@ def capture_and_predict(model_path, class_names):
     camera.release()
     cv2.destroyAllWindows()
 
-model_path = "bishwanathjanaModel.h5"
+def download_model_from_google_drive(url, output):
+    gdown.download(url, output, quiet=False)
+    return output
+
+google_drive_link = "https://drive.google.com/file/d/1E4w2lRkVADB3C8kwuLr7svinN_xKTvnq/view?usp=drive_link"
+output_path = "model.h5"
+model_path = download_model_from_google_drive(google_drive_link, output_path)
 class_names = ["bishwanath", "gobinda", "shivam", "shouvik"]
 capture_and_predict(model_path, class_names)
