@@ -1,29 +1,16 @@
-from flask import request, jsonify, current_app
+from flask import request, jsonify, current_app, Blueprint
 from . import db
 from .models import Student, Attendance
-from .utils import detect_face, extract_features, compare_embeddings
-from keras.models import load_model
-from tensorflow.keras.preprocessing import image
-import cv2
-import base64
-import numpy as np
-import os
+from .utils import process_frame
 
-embedding_model = None
-input_shape = (150, 150, 3)
+main = Blueprint('main', __name__)
 
-def load_embedding_model():
-    global embedding_model
-    base_model = InceptionV3(weights='imagenet', include_top=False, input_shape=input_shape)
-    flatten = Flatten()(base_model.output)
-    embedding_model = Model(base_model.input, flatten)
-
-@app.route('/students', methods=['GET'])
+@main.route('/students', methods=['GET'])
 def get_students():
     students = Student.query.all()
     return jsonify([{'id': student.id, 'name': student.name} for student in students])
 
-@app.route('/attendance', methods=['POST'])
+@main.route('/attendance', methods=['POST'])
 def mark_attendance():
     data = request.json
     student_id = data['student_id']
@@ -32,42 +19,24 @@ def mark_attendance():
     db.session.commit()
     return jsonify({'message': 'Attendance marked'})
 
-@app.route('/detect_faces', methods=['POST'])
-def detect_faces():
-    data = request.json
-    image_data = data['image']
-    decoded_image = base64.b64decode(image_data)
-    np_image = np.frombuffer(decoded_image, dtype=np.uint8)
-    frame = cv2.imdecode(np_image, cv2.IMREAD_COLOR)
+@main.route('/predict', methods=['POST'])
+def predict():
+    if 'file' not in request.files:
+        return jsonify({"error": "No file part"}), 400
+    
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({"error": "No selected file"}), 400
 
-    faces = detect_face(frame)
-    face_images = []
+    file_bytes = np.frombuffer(file.read(), np.uint8)
+    frame = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
 
-    for (x, y, w, h) in faces:
-        face_img = frame[y:y+h, x:x+w]
-        face_img = cv2.resize(face_img, (150, 150))
-        img_array = image.img_to_array(face_img)
-        img_array /= 255.0
+    predictions = process_frame(frame, current_app.config['CLASS_NAMES'])
 
-        predicted_class_name = predict_image_class(model, img_array, class_names)
+    return jsonify(predictions)
 
-        img_path1 = f'./{predicted_class_name}/image1.jpg'
-        img1 = image.load_img(img_path1, target_size=(150, 150))
-        img_array1 = image.img_to_array(img1)
+# Ensure embedding model is loaded before any request
+@main.before_app_first_request
+def before_first_request():
+    current_app.config['embedding_model'] = load_embedding_model()
 
-        anchor_embedding = extract_features(img_array1, embedding_model)
-        test_embedding = extract_features(img_array, embedding_model)
-
-        result = compare_embeddings(anchor_embedding, test_embedding)
-        label = predicted_class_name if result else "Unknown"
-
-        face_data = {
-            "face": base64.b64encode(cv2.imencode('.jpg', face_img)[1]).decode('utf-8'),
-            "label": label
-        }
-        face_images.append(face_data)
-
-    return jsonify({'faces': face_images})
-
-if embedding_model is None:
-    load_embedding_model()

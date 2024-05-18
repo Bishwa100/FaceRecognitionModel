@@ -1,22 +1,28 @@
-version: '3'
+version: '3.8'
+
 services:
   web:
     build: .
+    command: flask run --host=0.0.0.0
+    volumes:
+      - .:/app
     ports:
       - "5000:5000"
     environment:
+      - FLASK_APP=your_flask_app_name.py
       - FLASK_ENV=development
-      - DATABASE_URL=mysql+pymysql://root:example@db/flask_db
+      - DATABASE_URL=postgresql://user:password@db:5432/mydatabase
     depends_on:
       - db
 
   db:
-    image: mysql:5.7
+    image: postgres:13
     environment:
-      MYSQL_ROOT_PASSWORD: example
-      MYSQL_DATABASE: flask_db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: mydatabase
     volumes:
-      - db_data:/var/lib/mysql
+      - postgres_data:/var/lib/postgresql/data
 
 volumes:
-  db_data:
+  postgres_data:
