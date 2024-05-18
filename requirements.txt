@@ -1,7 +1,8 @@
-numpy
-opencv-python
+Flask
+Flask-SQLAlchemy
+psycopg2-binary
 tensorflow
 keras
-scipy
+opencv-python-headless
+numpy
 gdown
-Flask
