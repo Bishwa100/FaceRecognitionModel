@@ -1,29 +1,22 @@
-version: '3.8'
-
+version: '3'
 services:
-  app:
+  web:
     build: .
-    container_name: face_recognition_app
     ports:
-      - "8000:8000"
-    volumes:
-      - .:/app
+      - "5000:5000"
     environment:
-      - MYSQL_HOST=mysql
-      - MYSQL_USER=root
-      - MYSQL_PASSWORD=root_password
-      - MYSQL_DB=face_recognition
-    devices:
-      - "/dev/video0:/dev/video0"
+      - FLASK_ENV=development
+      - DATABASE_URL=mysql+pymysql://root:example@db/flask_db
     depends_on:
-      - mysql
+      - db
 
-  mysql:
-    image: mysql:latest
-    container_name: mysql
-    restart: always
+  db:
+    image: mysql:5.7
     environment:
-      MYSQL_ROOT_PASSWORD: root_password
-      MYSQL_DATABASE: face_recognition
-    ports:
-      - "3306:3306"
+      MYSQL_ROOT_PASSWORD: example
+      MYSQL_DATABASE: flask_db
+    volumes:
+      - db_data:/var/lib/mysql
+
+volumes:
+  db_data:
