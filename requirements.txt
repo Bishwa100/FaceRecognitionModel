@@ -1,8 +1,8 @@
-Flask==2.0.1
-Flask-SQLAlchemy==2.5.1
-psycopg2-binary==2.9.1
-tensorflow==2.4.1
-keras==2.4.3
-opencv-python-headless==4.5.1.48
-numpy==1.19.5
-gdown==3.13.0
+Flask
+Flask-SQLAlchemy
+psycopg2-binary
+tensorflow
+keras
+opencv-python-headless
+numpy
+gdown
