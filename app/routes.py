@@ -1,6 +1,6 @@
 from flask import request, jsonify, current_app, Blueprint
 from . import db
-from .models import Student, Attendance
+from .model import Student, Attendance
 from .utils import process_frame
 
 main = Blueprint('main', __name__)
@@ -36,7 +36,7 @@ def predict():
     return jsonify(predictions)
 
 # Ensure embedding model is loaded before any request
-@main.before_app_first_request
-def before_first_request():
-    current_app.config['embedding_model'] = load_embedding_model()
-
+@main.before_app_request
+def before_request():
+    if not hasattr(current_app, 'embedding_model'):
+        current_app.embedding_model = load_embedding_model()

@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import cv2
 from keras.models import load_model
@@ -114,16 +115,17 @@ def capture_and_predict(model_path, class_names, embedding_model):
     cv2.destroyAllWindows()
 
 def download_model_from_google_drive(drive_link, output):
-    file_id = drive_link.split('/')[-2]
-    gdown.download(f'https://drive.google.com/uc?id={file_id}', output, quiet=False)
+    if not os.path.exists(output):
+        file_id = drive_link.split('/')[-2]
+        gdown.download(f'https://drive.google.com/uc?id={file_id}', output, quiet=False)
     return output
 
 # Google Drive link for the model
-# google_drive_link = "https://drive.google.com/file/d/1wHQHMeAPQK-_gjIbJRPnt-oXTKdIZgim/view?usp=sharing"
-# output_path = "model.h5"
-# model_path = download_model_from_google_drive(google_drive_link, output_path)
+google_drive_link = "https://drive.google.com/file/d/1wHQHMeAPQK-_gjIbJRPnt-oXTKdIZgim/view?usp=sharing"
+output_path = "model.h5"
+model_path = download_model_from_google_drive(google_drive_link, output_path)
 
-model_path = "bishwanathjanaModel.h5"
+# model_path = "bishwanathjanaModel.h5"
 class_names = ["bishwanath", "gobinda", "shivam", "shouvik"]
 
 input_shape = (150, 150, 3)

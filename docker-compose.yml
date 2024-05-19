@@ -1,11 +1,12 @@
-version: '3.8'
+version: '3.9'  # Using latest stable version (3.9)
 
 services:
   web:
     build: .
-    command: flask run --host=0.0.0.0
+    command: ["/wait-for-it.sh", "db:5432", "--", "flask", "run", "--host=0.0.0.0"]
     volumes:
       - .:/app
+      - ./wait-for-it.sh:/wait-for-it.sh  # Mount the script
     ports:
       - "5000:5000"
     environment:
@@ -16,16 +17,16 @@ services:
       - db
 
   db:
-    image: postgres:13
+    image: postgres:latest  # Using latest postgres image
     environment:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
       POSTGRES_DB: mydatabase
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data  # Persisting data by default
 
   pgadmin:
-    image: dpage/pgadmin4
+    image: dpage/pgadmin4:latest  # Using latest pgadmin4 image
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@example.com
       PGADMIN_DEFAULT_PASSWORD: admin
@@ -35,4 +36,9 @@ services:
       - db
 
 volumes:
-  postgres_data:
+  postgres_data:  # Assuming you want to persist data
+    driver: local
+    driver_opts:
+      o: bind
+      type: none
+      device: /path/to/your/host/directory  # Replace with your desired host directory
