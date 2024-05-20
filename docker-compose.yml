@@ -1,44 +1,45 @@
-version: '3.9'  # Using latest stable version (3.9)
+version: '3.9'
 
 services:
   web:
     build: .
-    command: ["/wait-for-it.sh", "db:5432", "--", "flask", "run", "--host=0.0.0.0"]
+    command: ["sh", "-c", "./wait-for-it.sh pgdatabase:5432 -- flask run --host=0.0.0.0"]
     volumes:
       - .:/app
-      - ./wait-for-it.sh:/wait-for-it.sh  # Mount the script
+      - ./wait-for-it.sh:/wait-for-it.sh
     ports:
       - "5000:5000"
     environment:
       - FLASK_APP=run.py
       - FLASK_ENV=development
-      - DATABASE_URL=postgresql://user:password@db:5432/mydatabase
+      - DATABASE_URL=postgresql://user:password@pgdatabase:5432/mydatabase
     depends_on:
-      - db
+      - pgdatabase
 
-  db:
-    image: postgres:latest  # Using latest postgres image
+  pgdatabase:
+    image: postgres:latest
+    container_name: pgdatabase
     environment:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
       POSTGRES_DB: mydatabase
     volumes:
-      - postgres_data:/var/lib/postgresql/data  # Persisting data by default
+      - postgres_data:/var/lib/postgresql/data
 
   pgadmin:
-    image: dpage/pgadmin4:latest  # Using latest pgadmin4 image
+    image: dpage/pgadmin4:latest
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@example.com
       PGADMIN_DEFAULT_PASSWORD: admin
     ports:
       - "5050:80"
     depends_on:
-      - db
+      - pgdatabase
 
 volumes:
-  postgres_data:  # Assuming you want to persist data
+  postgres_data:
     driver: local
     driver_opts:
       o: bind
       type: none
-      device: /path/to/your/host/directory  # Replace with your desired host directory
+      device: "C:\\Users\\Bishwanath Jana\\postgres_data"  # Replace with your actual host directory
