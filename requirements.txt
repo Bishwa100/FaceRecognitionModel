@@ -6,4 +6,4 @@ keras
 opencv-python-headless
 numpy
 gdown
-
+python-dotenv
