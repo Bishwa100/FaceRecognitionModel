@@ -1,6 +1,15 @@
-# config.py
 import os
+import psycopg2
 
 class Config:
-    SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL', 'postgresql://user:password@db:5432/mydatabase')
-    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    DEBUG = True
+
+def get_db_connection():
+    conn = psycopg2.connect(
+        database=os.getenv('POSTGRES_DB', 'mydatabase'),
+        user=os.getenv('POSTGRES_USER', 'user'),
+        password=os.getenv('POSTGRES_PASSWORD', 'password'),
+        host=os.getenv('POSTGRES_HOST', 'db'),  # Default to 'db'
+        port=os.getenv('POSTGRES_PORT', '5432')  # Default to '5432'
+    )
+    return conn

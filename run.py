@@ -1,5 +1,6 @@
 from app import create_app
-
+from app.config import Config
+from dotenv import load_dotenv, find_dotenv
 app = create_app()
 
 if __name__ == '__main__':
