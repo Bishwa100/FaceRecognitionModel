@@ -7,6 +7,7 @@ from tensorflow.keras.models import Model
 from tensorflow.keras.applications import InceptionV3
 import cv2
 import gdown
+import os
 
 # Define the triplet loss function
 def triplet_loss(y_true, y_pred, alpha=0.2):
@@ -65,7 +66,11 @@ def download_model_from_google_drive(drive_link, output):
 
 def load_models(app):
     google_drive_link = "https://drive.google.com/file/d/1wHQHMeAPQK-_gjIbJRPnt-oXTKdIZgim/view?usp=sharing"
-    model_path = download_model_from_google_drive(google_drive_link, "model.h5")
+    model_filename = "model.h5"
+    if not os.path.exists(model_filename):
+        model_path = download_model_from_google_drive(google_drive_link, model_filename)
+    else:
+        model_path = model_filename
     face_recognition_model = load_model(model_path)
     input_shape = (150, 150, 3)
     embedding_model = create_embedding_model(input_shape)
