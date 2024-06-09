@@ -1,34 +1,59 @@
 from flask import request, jsonify, Blueprint
 from .utils import process_frame
 from .config import get_db_connection
-
+from .model import *
+from .dal import *
 main = Blueprint('main', __name__)
 
 @main.route('/students', methods=['GET'])
 def get_students():
     try:
-        conn = get_db_connection()
-        cur = conn.cursor()
-        cur.execute("SELECT student_id, first_name, last_name, birth_date, enrollment_date, major FROM student_data.student")
-        students = cur.fetchall()
-        cur.close()
-        conn.close()
-        student_list = []
-        for student in students:
-            student_dict = {
-                'student_id': student[0],
-                'first_name': student[1],
-                'last_name': student[2],
-                'birth_date': student[3],
-                'enrollment_date': student[4],
-                'major': student[5]
-            }
-            student_list.append(student_dict)
-        
-        return student_list
+        success, students = get_all_students()
+        if success:
+            student_list = [create_student_dict(student) for student in students]
+            return student_list,200
+        else:
+            return jsonify({'error': 'Failed to get students'}), 500
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     
+@main.route('/add/students', methods=['POST'])
+def add_student():
+    try:
+        student_data = request.json
+        
+        required_fields = ['student_code', 'first_name', 'last_name', 'birth_date', 'enrollment_date', 'major']
+        for field in required_fields:
+            if field not in student_data:
+                return jsonify({'error': f'Missing required field: {field}'}), 400
+        
+        success = insert_student(student_data)
+        
+        if success:
+            return jsonify({'message': 'Student added successfully'}), 201
+        else:
+            return jsonify({'error': 'Failed to add student'}), 500
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    
+
+@main.route('/attendance', methods=['GET'])
+def attendance():
+    student_code = request.args.get('student_code')
+    attendance_date = request.args.get('attendance_date')
+
+    if not student_code or not attendance_date:
+        return jsonify({'error': 'Please provide both student_code and attendance_date'}), 400
+
+    success, data = get_student_attendance(student_code, attendance_date)
+
+    if not success:
+        return jsonify({'error': data}), 500
+    else:
+        student_list = [create_student_dict(student) for student in data]
+        return student_list,200
+
+
     # @main.route('/attendance', methods=['POST'])
 # def mark_attendance():
 #     data = request.json

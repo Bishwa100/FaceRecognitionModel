@@ -8,3 +8,5 @@ numpy
 gdown
 psycopg2-binary
 python-dotenv
+flask-excel
+pyexcel-xlsx
