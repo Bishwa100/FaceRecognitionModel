@@ -1,8 +1,12 @@
-from flask import request, jsonify, Blueprint
+from flask import request, jsonify, Blueprint,send_file
 from .utils import process_frame
 from .config import get_db_connection
 from .model import *
 from .dal import *
+import flask_excel as excel
+import pandas as pd
+import io
+
 main = Blueprint('main', __name__)
 
 @main.route('/students', methods=['GET'])
@@ -41,18 +45,27 @@ def add_student():
 def attendance():
     student_code = request.args.get('student_code')
     attendance_date = request.args.get('attendance_date')
-
-    if not student_code or not attendance_date:
-        return jsonify({'error': 'Please provide both student_code and attendance_date'}), 400
+    isExcel = request.args.get('isExcel')
 
     success, data = get_student_attendance(student_code, attendance_date)
 
     if not success:
         return jsonify({'error': data}), 500
-    else:
-        student_list = [create_student_dict(student) for student in data]
-        return student_list,200
 
+    student_list = [create_student_attendance_dict(student) for student in data]
+
+    if isExcel:
+        try:
+            df = pd.DataFrame(student_list)  # Create DataFrame from student_list
+            output = io.BytesIO()
+            df.to_csv(output, index=False)
+            output.seek(0)
+            return send_file(output, mimetype='text/csv', as_attachment=True, download_name='attendance.csv'), 200
+        except Exception as e:
+            return jsonify({'error': 'Failed to generate Excel file', 'details': str(e)}), 500
+    else:
+        return jsonify(student_list), 200
+    
 
     # @main.route('/attendance', methods=['POST'])
 # def mark_attendance():
