@@ -57,8 +57,7 @@ def get_student_attendance(student_code, attendance_date):
                 ON
                     s.student_code = a.student_code
                 WHERE
-                    a.attendance_date = %s
-                    AND s.student_code = %s
+                    a.attendance_date = %s AND s.student_code = %s
             """, (attendance_date, student_code))
             records = cur.fetchall()
         conn.close()
@@ -66,5 +65,3 @@ def get_student_attendance(student_code, attendance_date):
     except Exception as e:
         print(f"Error: {e}")
         return (False, str(e))
-
-
