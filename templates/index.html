@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Camera Prediction</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+</head>
+<body>
+    <h1>Camera Prediction</h1>
+    
+    <div id="camera-feed">
+        <video id="videoElement" width="640" height="480" autoplay></video>
+    </div>
+    
+    <button id="startCamera">Start Camera</button>
+    <button id="stopCamera">Stop Camera</button>
+    
+    <script>
+        var video = document.querySelector("#videoElement");
+        
+        // Function to start the camera
+        function startCamera() {
+            if (navigator.mediaDevices.getUserMedia) {
+                navigator.mediaDevices.getUserMedia({ video: true })
+                    .then(function(stream) {
+                        video.srcObject = stream;
+                    })
+                    .catch(function(err0r) {
+                        console.log("Error: ", err0r);
+                    });
+            }
+        }
+        
+        // Function to stop the camera
+        function stopCamera() {
+            var stream = video.srcObject;
+            var tracks = stream.getTracks();
+        
+            tracks.forEach(function(track) {
+                track.stop();
+            });
+        
+            video.srcObject = null;
+        }
+        
+        // Start camera when clicking on "Start Camera" button
+        document.getElementById("startCamera").addEventListener("click", function() {
+            startCamera();
+            
+            // Call Flask API to start camera prediction
+            $.ajax({
+                url: "/predict_camera",
+                type: "GET",
+                success: function(response) {
+                    console.log("Camera prediction started:", response.message);
+                },
+                error: function(error) {
+                    console.log("Error starting camera prediction:", error);
+                }
+            });
+        });
+        
+        // Stop camera when clicking on "Stop Camera" button
+        document.getElementById("stopCamera").addEventListener("click", function() {
+            stopCamera();
+        });
+    </script>
+</body>
+</html>

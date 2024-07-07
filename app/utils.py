@@ -1,27 +1,15 @@
+from flask import Flask, jsonify, current_app
 import numpy as np
-from keras.models import load_model
+from tensorflow.keras.models import load_model, Model
+from tensorflow.keras.layers import Flatten
+from tensorflow.keras.applications import InceptionV3
 from tensorflow.keras.preprocessing import image
 from tensorflow.keras.applications.inception_v3 import preprocess_input
-from tensorflow.keras.layers import Flatten
-from tensorflow.keras.models import Model
-from tensorflow.keras.applications import InceptionV3
 import cv2
-import gdown
 import os
+import gdown
 
-# Define the triplet loss function
-def triplet_loss(y_true, y_pred, alpha=0.2):
-    total_length = y_pred.shape.as_list()[-1]
-    anchor = y_pred[:, 0:int(total_length/3)]
-    positive = y_pred[:, int(total_length/3):int(2*total_length/3)]
-    negative = y_pred[:, int(2*total_length/3):total_length]
-    
-    pos_dist = K.sum(K.square(anchor - positive), axis=1)
-    neg_dist = K.sum(K.square(anchor - negative), axis=1)
-    
-    basic_loss = pos_dist - neg_dist + alpha
-    loss = K.maximum(basic_loss, 0.0)
-    return loss
+app = Flask(__name__)
 
 # Define the embedding model
 def create_embedding_model(input_shape):
@@ -78,35 +66,62 @@ def load_models(app):
     app.config['embedding_model'] = embedding_model
     app.config['CLASS_NAMES'] = ["bishwanath", "gobinda", "shivam", "shouvik"]
 
-def process_frame(frame, class_names):
-    face_recognition_model = current_app.config['face_recognition_model']
-    embedding_model = current_app.config['embedding_model']
-    
-    faces = detect_face(frame)
+def capture_and_predict(model_path, class_names, embedding_model):
+    model = load_model(model_path)
+    camera = cv2.VideoCapture(0)  # Open the default camera
+
+    if not camera.isOpened():
+        print("Error: Could not open camera.")
+        return jsonify({"error": "Could not open camera"}), 500
+
     predictions = []
 
-    for (x, y, w, h) in faces:
-        face_img = frame[y:y+h, x:x+w]
-        face_img = cv2.resize(face_img, (150, 150))
-        img_array = image.img_to_array(face_img)
-        img_array /= 255.0
+    while True:
+        ret, frame = camera.read()
 
-        predicted_class_name = predict_image_class(face_recognition_model, img_array, class_names)
+        if not ret:
+            print("Error: Failed to capture image.")
+            break
 
-        # Load the reference image for similarity check
-        img_path1 = f'./{predicted_class_name}/image1.jpg'
-        img1 = image.load_img(img_path1, target_size=(150, 150))
-        img_array1 = image.img_to_array(img1)
+        faces = detect_face(frame)
 
-        anchor_embedding = extract_features(img_array1, embedding_model)
-        test_embedding = extract_features(img_array, embedding_model)
-        
-        result = compare_embeddings(anchor_embedding, test_embedding)
-        label = predicted_class_name if result else "Unknown"
+        for (x, y, w, h) in faces:
+            face_img = frame[y:y+h, x:x+w]
+            face_img = cv2.resize(face_img, (150, 150))
+            img_array = image.img_to_array(face_img)
+            img_array /= 255.0
 
-        predictions.append({
-            "bbox": (x, y, w, h),
-            "label": label
-        })
+            predicted_class_name = predict_image_class(model, img_array, class_names)
+            print(f"Predicted class Name: {predicted_class_name}")
+
+            # Load the reference image for similarity check
+            img_path1 = f'./{predicted_class_name}/image1.jpg'  # Update this path as per your directory structure
+            img1 = image.load_img(img_path1, target_size=(150, 150))
+            img_array1 = image.img_to_array(img1)
+
+            anchor_embedding = extract_features(img_array1, embedding_model)
+            test_embedding = extract_features(img_array, embedding_model)
+            
+            result = compare_embeddings(anchor_embedding, test_embedding)
+            if result:
+                label = predicted_class_name
+            else:
+                label = "Unknown"
+
+            print(f"Similarity Check Result: {result} - Label: {label}")
+
+            # Draw bounding box and label on the frame
+            cv2.rectangle(frame, (x, y), (x+w, y+h), (255, 0, 0), 2)
+            cv2.putText(frame, label, (x, y-10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255, 0, 0), 2)
+
+            predictions.append({"bbox": (x, y, w, h), "label": label})
+
+        cv2.imshow('Face Detection', frame)
+
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+
+    camera.release()
+    cv2.destroyAllWindows()
 
     return predictions

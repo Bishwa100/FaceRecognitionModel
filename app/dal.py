@@ -1,5 +1,5 @@
 from flask import request, jsonify, Blueprint
-from .utils import process_frame
+from .utils import *
 from .config import get_db_connection
 
 def insert_student(student):

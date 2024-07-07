@@ -1,13 +1,20 @@
-from flask import request, jsonify, Blueprint,send_file
-from .utils import process_frame
+from flask import request, jsonify, Blueprint,send_file,Response,render_template,current_app
+from .utils import *
 from .config import get_db_connection
 from .model import *
 from .dal import *
 import flask_excel as excel
 import pandas as pd
 import io
+import cv2
+import numpy as np
+
 
 main = Blueprint('main', __name__)
+
+@main.route('/')
+def index():
+    return render_template('index.html')
 
 @main.route('/students', methods=['GET'])
 def get_students():
@@ -76,23 +83,14 @@ def attendance():
 #     db.session.commit()
 #     return jsonify({'message': 'Attendance marked'})
 
-# @main.route('/predict', methods=['POST'])
-# def predict():
-#     if 'file' not in request.files:
-#         return jsonify({"error": "No file part"}), 400
+@main.route('/predict_camera')
+def predict_camera():
+    model_path = "model.h5"  # Path to your face recognition model
+    embedding_model = current_app.config['embedding_model']
+    class_names = current_app.config['CLASS_NAMES']
 
-#     file = request.files['file']
-#     if file.filename == '':
-#         return jsonify({"error": "No selected file"}), 400
+    # Load the face recognition model and start capturing from camera
+    capture_and_predict(model_path, class_names, embedding_model)
 
-#     file_bytes = np.frombuffer(file.read(), np.uint8)
-#     frame = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
+    return jsonify({"message": "Camera prediction started"})
 
-#     predictions = process_frame(frame, current_app.config['CLASS_NAMES'])
-
-#     return jsonify(predictions)
-
-# # Ensure embedding model is loaded before any request
-# @main.before_app_first_request
-# def before_first_request():
-#     current_app.config['embedding_model'] = load_embedding_model()

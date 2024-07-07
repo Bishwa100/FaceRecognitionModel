@@ -123,7 +123,7 @@ def download_model_from_google_drive(drive_link, output):
 # output_path = "model.h5"
 # model_path = download_model_from_google_drive(google_drive_link, output_path)
 
-model_path = "bishwanathjanaModel.h5"
+model_path = "model.h5"
 class_names = ["bishwanath", "gobinda", "shivam", "shouvik"]
 
 input_shape = (150, 150, 3)
