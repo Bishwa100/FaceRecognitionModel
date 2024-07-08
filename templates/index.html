@@ -3,67 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Camera Prediction</title>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <title>Face Recognition</title>
+    <style>
+        #videoFeed {
+            width: 640px;
+            height: 480px;
+            display: none; /* Hide video initially */
+        }
+    </style>
 </head>
 <body>
-    <h1>Camera Prediction</h1>
-    
-    <div id="camera-feed">
-        <video id="videoElement" width="640" height="480" autoplay></video>
+    <h1>Face Recognition</h1>
+    <div>
+        <img id="videoFeed" alt="Video Feed">
     </div>
-    
     <button id="startCamera">Start Camera</button>
-    <button id="stopCamera">Stop Camera</button>
-    
+    <button id="startPrediction" style="display: none;">Start Prediction</button>
+    <div id="predictions"></div>
+
     <script>
-        var video = document.querySelector("#videoElement");
-        
-        // Function to start the camera
-        function startCamera() {
-            if (navigator.mediaDevices.getUserMedia) {
-                navigator.mediaDevices.getUserMedia({ video: true })
-                    .then(function(stream) {
-                        video.srcObject = stream;
-                    })
-                    .catch(function(err0r) {
-                        console.log("Error: ", err0r);
-                    });
-            }
-        }
-        
-        // Function to stop the camera
-        function stopCamera() {
-            var stream = video.srcObject;
-            var tracks = stream.getTracks();
-        
-            tracks.forEach(function(track) {
-                track.stop();
-            });
-        
-            video.srcObject = null;
-        }
-        
-        // Start camera when clicking on "Start Camera" button
-        document.getElementById("startCamera").addEventListener("click", function() {
-            startCamera();
-            
-            // Call Flask API to start camera prediction
-            $.ajax({
-                url: "/predict_camera",
-                type: "GET",
-                success: function(response) {
-                    console.log("Camera prediction started:", response.message);
-                },
-                error: function(error) {
-                    console.log("Error starting camera prediction:", error);
-                }
-            });
+        document.getElementById('startCamera').addEventListener('click', () => {
+            const videoFeed = document.getElementById('videoFeed');
+            videoFeed.src = '/video_feed';
+            videoFeed.style.display = 'block';
+            document.getElementById('startCamera').style.display = 'none';
+            document.getElementById('startPrediction').style.display = 'block';
         });
-        
-        // Stop camera when clicking on "Stop Camera" button
-        document.getElementById("stopCamera").addEventListener("click", function() {
-            stopCamera();
+
+        document.getElementById('startPrediction').addEventListener('click', async () => {
+            const response = await fetch('/predict_camera');
+            const data = await response.json();
+            document.getElementById('predictions').innerText = JSON.stringify(data, null, 2);
         });
     </script>
 </body>

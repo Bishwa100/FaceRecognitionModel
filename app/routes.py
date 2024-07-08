@@ -83,14 +83,45 @@ def attendance():
 #     db.session.commit()
 #     return jsonify({'message': 'Attendance marked'})
 
-@main.route('/predict_camera')
+
+@main.route('/video_feed')
+def video_feed():
+    return Response(gen_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
+
+@main.route('/predict_camera', methods=['GET'])
 def predict_camera():
     model_path = "model.h5"  # Path to your face recognition model
     embedding_model = current_app.config['embedding_model']
     class_names = current_app.config['CLASS_NAMES']
 
-    # Load the face recognition model and start capturing from camera
-    capture_and_predict(model_path, class_names, embedding_model)
+    # Check if the model file exists
+    if model_path not in os.listdir('.'):
+        return jsonify({"message": "Model file not found. Please ensure the model.h5 file is in the correct directory."}), 404
 
-    return jsonify({"message": "Camera prediction started"})
+    predictions = capture_and_predict(model_path, class_names, embedding_model)
+
+    if "error" in predictions:
+        return jsonify({"message": predictions["error"]}), 500
+
+    return jsonify({"message": "Camera prediction completed", "predictions": predictions})
+
+def gen_frames():
+    camera = cv2.VideoCapture(0)
+    if not camera.isOpened():
+        print("Error: Could not open camera.")
+        return
+
+    while True:
+        success, frame = camera.read()
+        if not success:
+            break
+        else:
+            ret, buffer = cv2.imencode('.jpg', frame)
+            frame = buffer.tobytes()
+            yield (b'--frame\r\n'
+                   b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+
+    camera.release()
+    cv2.destroyAllWindows()
+
 

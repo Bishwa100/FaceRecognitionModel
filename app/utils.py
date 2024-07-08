@@ -1,4 +1,3 @@
-from flask import Flask, jsonify, current_app
 import numpy as np
 from tensorflow.keras.models import load_model, Model
 from tensorflow.keras.layers import Flatten
@@ -8,8 +7,6 @@ from tensorflow.keras.applications.inception_v3 import preprocess_input
 import cv2
 import os
 import gdown
-
-app = Flask(__name__)
 
 # Define the embedding model
 def create_embedding_model(input_shape):
@@ -68,11 +65,10 @@ def load_models(app):
 
 def capture_and_predict(model_path, class_names, embedding_model):
     model = load_model(model_path)
-    camera = cv2.VideoCapture(0)  # Open the default camera
+    camera = cv2.VideoCapture(2)  # Open the default camera
 
     if not camera.isOpened():
-        print("Error: Could not open camera.")
-        return jsonify({"error": "Could not open camera"}), 500
+        return {"error": "Could not open camera"}
 
     predictions = []
 
@@ -80,7 +76,6 @@ def capture_and_predict(model_path, class_names, embedding_model):
         ret, frame = camera.read()
 
         if not ret:
-            print("Error: Failed to capture image.")
             break
 
         faces = detect_face(frame)
@@ -92,23 +87,23 @@ def capture_and_predict(model_path, class_names, embedding_model):
             img_array /= 255.0
 
             predicted_class_name = predict_image_class(model, img_array, class_names)
-            print(f"Predicted class Name: {predicted_class_name}")
 
             # Load the reference image for similarity check
             img_path1 = f'./{predicted_class_name}/image1.jpg'  # Update this path as per your directory structure
-            img1 = image.load_img(img_path1, target_size=(150, 150))
-            img_array1 = image.img_to_array(img1)
+            if os.path.exists(img_path1):
+                img1 = image.load_img(img_path1, target_size=(150, 150))
+                img_array1 = image.img_to_array(img1)
 
-            anchor_embedding = extract_features(img_array1, embedding_model)
-            test_embedding = extract_features(img_array, embedding_model)
-            
-            result = compare_embeddings(anchor_embedding, test_embedding)
-            if result:
-                label = predicted_class_name
+                anchor_embedding = extract_features(img_array1, embedding_model)
+                test_embedding = extract_features(img_array, embedding_model)
+
+                result = compare_embeddings(anchor_embedding, test_embedding)
+                if result:
+                    label = predicted_class_name
+                else:
+                    label = "Unknown"
             else:
                 label = "Unknown"
-
-            print(f"Similarity Check Result: {result} - Label: {label}")
 
             # Draw bounding box and label on the frame
             cv2.rectangle(frame, (x, y), (x+w, y+h), (255, 0, 0), 2)
